@@ -8,106 +8,114 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
-public class Base extends Jpanel{
+public class Base extends Jpanel {
+	static WebDriver wd;
+	static String courseId = "";
 
 	public static void main(String[] args) throws Exception {
-		String path=property("driverpath");
-		System.setProperty("phantomjs.binary.path",path );
-		DesiredCapabilities cap = new DesiredCapabilities();
-		cap.setJavascriptEnabled(true);
-		WebDriver wd=new PhantomJSDriver();
+		System.setProperty("webdriver.chrome.driver", "D:\\libs\\chromedriver.exe");
+		wd = new ChromeDriver();// PhantomJSDriver();
+		wd.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
 		System.out.println("Opened Browser");
-		String[] output=input();
-	
-		 String url=output[0];
-		 String user=output[1];
-		 String pwd=output[2];
-		 String courseId=output[3];
-		 
-		 wd.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
-		 wd.get(url);
-		 System.out.println("opening "+url);
-		 String message="Course published successfully";
-		 
-		  By username=By.id("username");
-		  By password=By.id("password");
-		  By loginbutton=By.cssSelector("button");
-		  By Cmenu=By.xpath("//img[@src='../../../images/admin/icn_contextual.gif']");
-		  By textBox=By.id("txtCourseDetail");
-		  By radioButton=By.id("rdPegasusID");
-		  By searchButton=By.xpath("//img[@onclick='searchCourse();']");
-		  By PublishCourse=By.xpath("//div[@id='referenceId2']//a[contains(text(),'Publish Master Course')]");
-		  By publishAcceptButton=By.id("imgbtnSave");
-		  //By cancelButton=By.xpath("//*[@onclick='javascript:window.close();']");
-		  By logoutArrow=By.cssSelector("div>span[class='fa fa-chevron-down txtwelcome']");
-		  By signOut=By.cssSelector("a[title='Sign out']");
-		  By SuccessMessage=By.xpath("span[@class='messagesucessfont']");
-		  
-		  wd.findElement(username).sendKeys(user);
-		  wd.findElement(password).sendKeys(pwd);
-		  wd.findElement(loginbutton).click();
-		  
-		  System.out.println("Logged in "+wd.getTitle());
-		  wd.switchTo().frame(wd.findElement(By.id("ifrmright")));
-		  
-		 
-		  wd.findElement(radioButton).click();
-		  wd.findElement(textBox).sendKeys(courseId);
-  		  WebElement search=wd.findElement(searchButton);
-  		  search.click();
-  		  
-		  JavascriptExecutor js= (JavascriptExecutor) wd ;
-		  js.executeScript("javascript:window.scrollBy(250,0)" );
-		  
-		  
-		  if(wd.findElement(Cmenu).isDisplayed())
-		  {
-			  JOptionPane.showMessageDialog( null, "Please check your course ID", null, JOptionPane.ERROR_MESSAGE);
-		  }
-		  wd.findElement(Cmenu).click();
-		  
-		  wd.findElement(PublishCourse).click();
-		  
-		  String parent=wd.getWindowHandle();
-		  
-		  	Set<String>iterator=wd.getWindowHandles();
-			Iterator<String>winIterator=iterator.iterator();
-			long count=0;
-			while (winIterator.hasNext()) 
-				{
-					String s=winIterator.next().toString();
-					wd.switchTo().window(s);
-					if (count==1) 
-						{
-							break;
-						}
-					count++;
-				}
-			  
-		 wd.findElement(publishAcceptButton).click();
-		 System.out.println("Clicked on publish button");
-		 wd.switchTo().window(parent);
-		  
-		  String actualMessage=wd.findElement(SuccessMessage).getAttribute("innerHTML");
-		  
-		  if (actualMessage.contains(message)) 
-			  {
-				  JOptionPane.showMessageDialog( null, actualMessage, null, JOptionPane.INFORMATION_MESSAGE);
-			  }  
-		  
-		  else
-			  {
-				  JOptionPane.showMessageDialog( null, "No message dispalyed after publishing course", null, JOptionPane.ERROR_MESSAGE);
-			  }
-		  wd.findElement(logoutArrow).click();
-		  wd.findElement(signOut).click();
-						  
-		  wd.quit();
+		// String[] output=input();
+		login();
+		for (int i = 0; i <= 10; i++) {
+			try {
+				ComposeMail(courseId);
+				TypeMail();
+			} catch (Exception e) 
+			{
+				System.err.println(e);
+			}
+			
 		}
-
 	}
+
+	public static void login() {
+		String url = "";
+		String user = "";
+		String pwd = "@1";
+		wd.get(url);
+		System.out.println("opening " + url);
+		By username = By.id("loginname");
+		By password = By.id("password");
+		By loginbutton = By.cssSelector("button");
+		By close = By.cssSelector("button[class='close']");
+		By logoutArrow = By.cssSelector("div>span[class='fa fa-chevron-down txtwelcome']");
+		By signOut = By.cssSelector("a[title='Sign out']");
+		By SuccessMessage = By.xpath("span[@class='messagesucessfont']");
+		By ddwnIcon = By.xpath("//a[@title='Communicate']/following-sibling::a/span");
+		By mail = By.partialLinkText("Mail");
+		wd.findElement(close).click();
+		wd.findElement(username).sendKeys(user);
+		wd.findElement(password).sendKeys(pwd);
+		wd.findElement(loginbutton).click();
+		// enter inside course
+		System.out.println("Logged in " + wd.getTitle());
+		wd.findElement(By.partialLinkText(courseId)).click();
+		// mail
+		javascriptClick(wd.findElement(ddwnIcon));
+		wd.findElement(mail).click();
+	}
+
+	public static void ComposeMail(String courseName) {
+		By composeButton = By.xpath("//button[text()='Compose New']");
+		By To = By.cssSelector("input[value='To']");
+		By frame = By.id("srcIframe");
+		By popUpFrame = By.id("openModalPopupframe");
+		WebDriverWait w = new WebDriverWait(wd, 60);
+		String val = String.format("//span[contains(@class,'_ctl0_InnerPageContent_GlobalRecipientList') and text()='"
+				+ courseName + "']/preceding::input[1]");
+		By checkbox = By.xpath(val);
+		By addRecipent = By.cssSelector("input[value='Add Recipients']");
+		wd.findElement(composeButton).click();
+		wd.switchTo().frame(wd.findElement(frame));
+		wd.findElement(To).click();
+		wd.switchTo().defaultContent();
+		try {
+			Thread.sleep(4000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		w.until(webDriver -> ((JavascriptExecutor) webDriver).executeScript("return document.readyState")
+				.equals("complete"));
+		wd.switchTo().frame(wd.findElement(popUpFrame));
+		// ((JavascriptExecutor)wd).executeScript("arguments[0].scrollIntoView(true)",
+		// checkbox);
+		w.until(ExpectedConditions.elementToBeClickable(checkbox));
+		javascriptClick(wd.findElement(checkbox));
+		w.until(ExpectedConditions.elementToBeClickable(addRecipent));
+		javascriptClick(wd.findElement(addRecipent));
+		wd.switchTo().defaultContent();
+	}
+
+	public static void TypeMail() {
+		By frame = By.id("srcIframe");
+		By virwSoiurce = By.id("viewsource");
+		By textarea = By.id("_ctl0_InnerPageContent_txtHTMLEditor_textarea");
+		By send = By.cssSelector("input[value='Send']");
+		By sub = By.cssSelector("input[name='_ctl0:InnerPageContent:txtSubject']");
+		wd.switchTo().frame(wd.findElement(frame));
+		wd.findElement(sub).sendKeys("AutoMail");
+		wd.findElement(virwSoiurce).click();
+		wd.findElement(textarea).clear();
+		wd.findElement(textarea).sendKeys("AutoMail");
+		WebDriverWait w = new WebDriverWait(wd, 60);
+		w.until(ExpectedConditions.elementToBeClickable(send));
+		wd.findElement(send).click();
+		wd.switchTo().defaultContent();
+	}
+
+	public static void javascriptClick(WebElement ele) {
+		((JavascriptExecutor) wd).executeScript("arguments[0].click();", ele);
+	}
+
+}
 
 
